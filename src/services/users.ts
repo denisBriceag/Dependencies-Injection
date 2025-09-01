@@ -1,16 +1,21 @@
-import { HTTP } from './http';
+import { HTTP } from "./http";
 
-import type { ApiConfig, User } from '../types';
+import type { ApiConfig, User } from "../types";
+import { IOC_CONTAINER_KEYS } from "../ioc/tokens";
+
 export class Users {
-  http: HTTP;
-  apiConfig: ApiConfig;
+  private readonly _http: HTTP;
+  private readonly _apiConfig: { api: ApiConfig };
 
-  constructor(apiConfig: ApiConfig) {
-    this.http = new HTTP(apiConfig);
-    this.apiConfig = apiConfig;
+  static $singleton = true;
+  static $inject = [IOC_CONTAINER_KEYS.http, IOC_CONTAINER_KEYS.config];
+
+  constructor(http: HTTP, config: { api: ApiConfig }) {
+    this._http = http;
+    this._apiConfig = config;
   }
 
-  getUsers() {
-    return this.http.get(this.apiConfig.resources.users) as unknown as User[];
+  getUsers(): Promise<User[]> {
+    return this._http.get<User[]>(this._apiConfig.api.resources.users);
   }
 }

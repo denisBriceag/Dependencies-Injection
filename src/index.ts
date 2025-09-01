@@ -1,33 +1,49 @@
-import { Users } from './services/users';
-import { Logger } from './services/logger';
+import { Users } from "./services/users";
 
-import type { User, ApiConfig } from './types';
+import type { User, ApiConfig, ILogger } from "./types";
+import { createIoCContainer } from "./ioc";
+import { IOC_CONTAINER_KEYS } from "./ioc/tokens";
 
-const renderUsers = async (config: ApiConfig) => {
-  const usersService = new Users(config);
-  const users = await usersService.getUsers();
+class App {
+  private readonly _userService: Users;
+  private readonly _logger: ILogger;
+  private readonly _config: ApiConfig;
 
-  const listNode = document.getElementById('users-list');
+  static $inject = [
+    IOC_CONTAINER_KEYS.logger,
+    IOC_CONTAINER_KEYS.config,
+    IOC_CONTAINER_KEYS.users,
+  ];
 
-  users.forEach((user: User) => {
-    const listItemNode = document.createElement('li');
+  constructor(logger: ILogger, userService: Users, config: ApiConfig) {
+    this._userService = userService;
+    this._logger = logger;
+    this._config = config;
+  }
 
-    listItemNode.innerHTML = user.name;
-    listNode.appendChild(listItemNode);
-  });
-};
+  async renderUsers(): Promise<void> {
+    const users = await this._userService.getUsers();
+    const listNode = document.getElementById("users-list");
 
-const app = () => {
-  const config = (window as any).__CONFIG__;
-  delete (window as any).__CONFIG__;
+    (users || []).forEach((user: User) => {
+      const listItemNode = document.createElement("li");
 
-  renderUsers(config.api);
-};
+      listItemNode.innerHTML = user.name;
+      listNode.appendChild(listItemNode);
+    });
+  }
+}
 
-window.onload = (event: Event) => {
-  const logger = new Logger();
+window.onload = () => {
+  const ioc = createIoCContainer();
 
-  logger.info('Page is loaded.');
+  const users = ioc.resolve(IOC_CONTAINER_KEYS.users);
+  const logger = ioc.resolve(IOC_CONTAINER_KEYS.logger);
+  const config = ioc.resolve(IOC_CONTAINER_KEYS.config);
 
-  app();
+  logger.info("Page is loaded.");
+
+  const app = new App(logger, users, config);
+
+  void app.renderUsers();
 };
