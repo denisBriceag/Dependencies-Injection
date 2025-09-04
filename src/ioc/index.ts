@@ -1,12 +1,15 @@
-import IoCContainer from 'ioc-lite';
+import IoCContainer from "ioc-lite";
+import { Logger } from "../services/logger";
 
-// import { Logger } from '../services/logger';
-// import { HTTP } from '../services/http';
-// import { Users } from '../services/users';
+import { HTTP } from "../services/http";
+import { Users } from "../services/users";
+import { IOC_CONTAINER_KEYS, IoCResources } from "./tokens";
 
-export const createIoCContainer = () =>  {
-  const ioc = new IoCContainer();
-  // you can register some resources right now below...
-
-  return ioc;
+const createIoCContainer = () => {
+  return new IoCContainer<IoCResources>()
+    .registerClass(IOC_CONTAINER_KEYS.logger, Logger)
+    .registerClass(IOC_CONTAINER_KEYS.http, HTTP)
+    .registerClass(IOC_CONTAINER_KEYS.users, Users);
 };
+
+export const ioc = createIoCContainer();

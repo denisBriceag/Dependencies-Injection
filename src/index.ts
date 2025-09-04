@@ -1,33 +1,41 @@
-import { Users } from './services/users';
-import { Logger } from './services/logger';
+import { Users } from "./services/users";
 
-import type { User, ApiConfig } from './types';
+import type { User } from "./types";
+import { ioc } from "./ioc";
+import { IOC_CONTAINER_KEYS } from "./ioc/tokens";
 
-const renderUsers = async (config: ApiConfig) => {
-  const usersService = new Users(config);
-  const users = await usersService.getUsers();
+class App {
+  private readonly _userService: Users;
 
-  const listNode = document.getElementById('users-list');
+  constructor() {
+    this._userService = ioc.resolve(IOC_CONTAINER_KEYS.users);
+  }
 
-  users.forEach((user: User) => {
-    const listItemNode = document.createElement('li');
+  async renderUsers(): Promise<void> {
+    const users = await this._userService.getUsers();
+    const listNode = document.getElementById("users-list");
 
-    listItemNode.innerHTML = user.name;
-    listNode.appendChild(listItemNode);
-  });
-};
+    (users || []).forEach((user: User) => {
+      const listItemNode = document.createElement("li");
 
-const app = () => {
-  const config = (window as any).__CONFIG__;
-  delete (window as any).__CONFIG__;
+      listItemNode.innerHTML = user.name;
+      listNode.appendChild(listItemNode);
+    });
+  }
+}
 
-  renderUsers(config.api);
-};
+window.onload = () => {
+  /**
+   * @description Register config in IOC when application is loaded and there is access to window object
+   * */
+  ioc.register(IOC_CONTAINER_KEYS.config, window.__CONFIG__);
+  delete window.__CONFIG__;
 
-window.onload = (event: Event) => {
-  const logger = new Logger();
+  const logger = ioc.resolve(IOC_CONTAINER_KEYS.logger);
 
-  logger.info('Page is loaded.');
+  logger.info("Page is loaded.");
 
-  app();
+  const app = new App();
+
+  void app.renderUsers();
 };

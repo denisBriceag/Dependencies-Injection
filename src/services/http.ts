@@ -1,25 +1,32 @@
-import { Logger } from './logger';
+import type { ApiConfig, ILogger } from "../types";
+import { IOC_CONTAINER_KEYS } from "../ioc/tokens";
 
-import type { ApiConfig } from '../types';
 export class HTTP {
-  logger: Logger;
-  apiConfig: ApiConfig;
+  private readonly _logger: ILogger;
+  private readonly _apiConfig: { api: ApiConfig };
 
-  constructor(apiConfig: ApiConfig) {
-    this.apiConfig = apiConfig;
-    this.logger = new Logger();
+  static $singleton = true;
+  static $inject = [IOC_CONTAINER_KEYS.config, IOC_CONTAINER_KEYS.logger];
+
+  constructor(apiConfig: { api: ApiConfig }, logger: ILogger) {
+    this._apiConfig = apiConfig;
+    this._logger = logger;
   }
 
-  async get(url: string) {
-    const response = await fetch(`${this.apiConfig.path}${url}`);
+  async get<T>(url: string): Promise<T> {
+    const response = await fetch(`${this._apiConfig.api.path}${url}`);
 
     if (response.ok) {
       const responseData = await response.json();
-      this.logger.info(`Status: ${response.status}. Response: ${JSON.stringify(responseData)}`);
+      this._logger.info(
+        `Status: ${response.status}. Response: ${JSON.stringify(responseData)}`,
+      );
 
       return responseData;
     } else {
-      this.logger.error(`Status: ${response.status}. Status Text: ${response.statusText}`);
+      this._logger.error(
+        `Status: ${response.status}. Status Text: ${response.statusText}`,
+      );
     }
   }
 }
